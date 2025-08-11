@@ -33,14 +33,10 @@
     renderer.setPixelRatio(window.devicePixelRatio);
     document.body.appendChild(renderer.domElement);
 
-    // Add a camera (adjusted for left side container)
-    const container = document.querySelector('.wrapper');
-    const containerWidth = container.clientWidth;
-    const containerHeight = container.clientHeight;
-    
+    // Add a camera
     camera = new THREE.PerspectiveCamera(
     50,
-    containerWidth / containerHeight,
+    window.innerWidth / window.innerHeight,
     0.1,
     1000);
 
@@ -153,7 +149,11 @@
     scene.add(floor);
 
     let geometry = new THREE.SphereGeometry(8, 32, 32);
-    let material = new THREE.MeshBasicMaterial({ color: 0x9bffaf }); // 0xf2ce2e 
+    let material = new THREE.MeshBasicMaterial({ 
+      color: 0xb3d4f5,  // Lighter blue
+      opacity: 0.8,
+      transparent: true
+    }); 
     let sphere = new THREE.Mesh(geometry, material);
 
     sphere.position.z = -15;
@@ -182,9 +182,8 @@
 
   function resizeRendererToDisplaySize(renderer) {
     const canvas = renderer.domElement;
-    const container = document.querySelector('.wrapper');
-    let width = container.clientWidth;
-    let height = container.clientHeight;
+    let width = window.innerWidth;
+    let height = window.innerHeight;
     let canvasPixelWidth = canvas.width / window.devicePixelRatio;
     let canvasPixelHeight = canvas.height / window.devicePixelRatio;
 
