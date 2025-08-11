@@ -33,10 +33,14 @@
     renderer.setPixelRatio(window.devicePixelRatio);
     document.body.appendChild(renderer.domElement);
 
-    // Add a camera
+    // Add a camera (adjusted for left side container)
+    const container = document.querySelector('.wrapper');
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+    
     camera = new THREE.PerspectiveCamera(
     50,
-    window.innerWidth / window.innerHeight,
+    containerWidth / containerHeight,
     0.1,
     1000);
 
@@ -178,8 +182,9 @@
 
   function resizeRendererToDisplaySize(renderer) {
     const canvas = renderer.domElement;
-    let width = window.innerWidth;
-    let height = window.innerHeight;
+    const container = document.querySelector('.wrapper');
+    let width = container.clientWidth;
+    let height = container.clientHeight;
     let canvasPixelWidth = canvas.width / window.devicePixelRatio;
     let canvasPixelHeight = canvas.height / window.devicePixelRatio;
 
@@ -187,6 +192,8 @@
     canvasPixelWidth !== width || canvasPixelHeight !== height;
     if (needResize) {
       renderer.setSize(width, height, false);
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
     }
     return needResize;
   }
@@ -304,4 +311,66 @@
     return { x: dx, y: dy };
   }
 
+})();
+
+// Chat functionality
+(function() {
+  const chatInput = document.getElementById('chat-input');
+  const chatSend = document.getElementById('chat-send');
+  const chatMessages = document.getElementById('chat-messages');
+
+  function addMessage(text, isUser) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `chat-message ${isUser ? 'user-message' : 'bot-message'}`;
+    
+    const authorSpan = document.createElement('span');
+    authorSpan.className = 'message-author';
+    authorSpan.textContent = isUser ? 'You:' : 'AI:';
+    
+    const textSpan = document.createElement('span');
+    textSpan.className = 'message-text';
+    textSpan.textContent = text;
+    
+    messageDiv.appendChild(authorSpan);
+    messageDiv.appendChild(textSpan);
+    chatMessages.appendChild(messageDiv);
+    
+    // Scroll to bottom
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  function sendMessage() {
+    const message = chatInput.value.trim();
+    if (message) {
+      // Add user message
+      addMessage(message, true);
+      
+      // Clear input
+      chatInput.value = '';
+      
+      // Simulate bot response after a short delay
+      setTimeout(() => {
+        const responses = [
+          "That's interesting! Tell me more.",
+          "I understand. How does that make you feel?",
+          "Thanks for sharing that with me.",
+          "That's a great point!",
+          "I see what you mean.",
+          "Could you elaborate on that?",
+          "That's fascinating!",
+          "I appreciate you telling me that."
+        ];
+        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+        addMessage(randomResponse, false);
+      }, 1000);
+    }
+  }
+
+  // Event listeners
+  chatSend.addEventListener('click', sendMessage);
+  chatInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      sendMessage();
+    }
+  });
 })();

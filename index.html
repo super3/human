@@ -17,9 +17,26 @@
 		<div class="loading" id="js-loader">
 			<div class="loader"></div>
 		</div>
-		<div class="wrapper">
-		    <!-- The canvas element is used to draw the 3D scene -->
-			<canvas id="c"></canvas>
+		<div class="main-container">
+			<div class="wrapper">
+				<!-- The canvas element is used to draw the 3D scene -->
+				<canvas id="c"></canvas>
+			</div>
+			<div class="chat-container">
+				<div class="chat-header">
+					<h2>Chat</h2>
+				</div>
+				<div class="chat-messages" id="chat-messages">
+					<div class="chat-message bot-message">
+						<span class="message-author">AI:</span>
+						<span class="message-text">Hello! I'm here to chat with you. How are you today?</span>
+					</div>
+				</div>
+				<div class="chat-input-container">
+					<input type="text" id="chat-input" placeholder="Type a message..." />
+					<button id="chat-send">Send</button>
+				</div>
+			</div>
 		</div>
 		<div class="frame">
 			<h1 class="frame__title">Human</h1>
