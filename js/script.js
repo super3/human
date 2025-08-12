@@ -264,7 +264,6 @@
     let degrees = getMouseDegrees(mouse.x, mouse.y, degreeLimit);
     joint.rotation.y = THREE.Math.degToRad(degrees.x);
     joint.rotation.x = THREE.Math.degToRad(degrees.y);
-    console.log(joint.rotation.x);
   }
 
   function getMouseDegrees(x, y, degreeLimit) {
@@ -312,11 +311,31 @@
 
 })();
 
-// Chat functionality
+// Chat functionality with Groq API
 (function() {
+  // Use backend API endpoint (no API key needed in frontend!)
+  // Automatically detect environment
+  const isLocalDev = window.location.hostname === 'localhost' || 
+                     window.location.hostname === '127.0.0.1' || 
+                     window.location.protocol === 'file:';
+  
+  const API_ENDPOINT = isLocalDev 
+    ? 'http://localhost:3001/api/chat'  // Local development
+    : '/api/chat';  // Production (Vercel or other hosting)
+  
+  console.log('Using API endpoint:', API_ENDPOINT);
+  
   const chatInput = document.getElementById('chat-input');
   const chatSend = document.getElementById('chat-send');
   const chatMessages = document.getElementById('chat-messages');
+  
+  // Store conversation history
+  let conversationHistory = [
+    {
+      role: "system",
+      content: "You are a friendly AI assistant having a conversation with a human. Be helpful, engaging, and concise in your responses."
+    }
+  ];
 
   function addMessage(text, isUser) {
     const messageDiv = document.createElement('div');
@@ -338,38 +357,101 @@
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
-  function sendMessage() {
+  async function getGroqResponse(message) {
+    // Add user message to history
+    conversationHistory.push({ role: "user", content: message });
+    
+    try {
+      const response = await fetch(API_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          messages: conversationHistory
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const aiResponse = data.choices[0].message.content;
+      
+      // Add AI response to history
+      conversationHistory.push({ role: "assistant", content: aiResponse });
+      
+      // Keep conversation history manageable (last 10 exchanges)
+      if (conversationHistory.length > 21) {
+        conversationHistory = [
+          conversationHistory[0], // Keep system message
+          ...conversationHistory.slice(-20) // Keep last 20 messages (10 exchanges)
+        ];
+      }
+      
+      return aiResponse;
+    } catch (error) {
+      console.error('Error calling API:', error);
+      console.error('API Endpoint:', API_ENDPOINT);
+      console.error('Error details:', error.message);
+      
+      // More specific error messages
+      if (error.message.includes('Failed to fetch')) {
+        return "Cannot connect to the backend server. Make sure the server is running on port 3001.";
+      } else if (error.message.includes('401')) {
+        return "API key error. Please check your .env file has the correct GROQ_API_KEY.";
+      } else {
+        return `Connection error: ${error.message}. Check the browser console for details.`;
+      }
+    }
+  }
+
+  async function sendMessage() {
     const message = chatInput.value.trim();
     if (message) {
       // Add user message
       addMessage(message, true);
       
-      // Clear input
+      // Clear input and disable while processing
       chatInput.value = '';
+      chatInput.disabled = true;
+      chatSend.disabled = true;
       
-      // Simulate bot response after a short delay
-      setTimeout(() => {
-        const responses = [
-          "That's interesting! Tell me more.",
-          "I understand. How does that make you feel?",
-          "Thanks for sharing that with me.",
-          "That's a great point!",
-          "I see what you mean.",
-          "Could you elaborate on that?",
-          "That's fascinating!",
-          "I appreciate you telling me that."
-        ];
-        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-        addMessage(randomResponse, false);
-      }, 1000);
+      // Show typing indicator
+      const typingDiv = document.createElement('div');
+      typingDiv.className = 'chat-message bot-message typing-indicator';
+      typingDiv.innerHTML = '<span class="message-author">AI:</span><span class="message-text">Typing...</span>';
+      chatMessages.appendChild(typingDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      
+      try {
+        // Get AI response
+        const aiResponse = await getGroqResponse(message);
+        
+        // Remove typing indicator
+        typingDiv.remove();
+        
+        // Add AI response
+        addMessage(aiResponse, false);
+      } finally {
+        // Re-enable input
+        chatInput.disabled = false;
+        chatSend.disabled = false;
+        chatInput.focus();
+      }
     }
   }
 
   // Event listeners
   chatSend.addEventListener('click', sendMessage);
   chatInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
       sendMessage();
     }
   });
+  
+  // Welcome message
+  console.log('Chat initialized. Using backend API endpoint:', API_ENDPOINT);
 })();
